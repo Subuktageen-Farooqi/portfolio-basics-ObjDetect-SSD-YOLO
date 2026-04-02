@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from pretrained_detectors import get_device, run_ssd, run_yolo
+from pretrained_detectors import get_device, load_ssd_model, run_ssd, run_yolo
 
 VALID_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
@@ -54,6 +54,9 @@ def main():
         raise SystemExit(f"Invalid folder path: {data_folder}")
 
     device = get_device(args.device)
+    ssd_runtime = None
+    if args.model == "ssd":
+        ssd_runtime = load_ssd_model(device)
 
     output_root = Path("outputs") / args.model
     image_out_dir = output_root / "images"
@@ -76,11 +79,18 @@ def main():
 
         try:
             if args.model == "ssd":
-                pred, annotated = run_ssd(image, args.conf, device)
+                model, preprocess, class_names = ssd_runtime
+                pred, annotated = run_ssd(
+                    image,
+                    args.conf,
+                    device,
+                    model=model,
+                    preprocess=preprocess,
+                    class_names=class_names,
+                )
                 boxes = pred["boxes"].detach().cpu().numpy()
                 labels = pred["labels"].detach().cpu().numpy()
                 scores = pred["scores"].detach().cpu().numpy()
-                class_names = {}
             else:
                 pred, annotated = run_yolo(image, args.conf, device)
                 boxes = pred["boxes"] if len(pred["boxes"]) else np.empty((0, 4))

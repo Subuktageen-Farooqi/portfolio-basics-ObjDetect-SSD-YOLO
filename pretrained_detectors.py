@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -41,7 +42,7 @@ def draw_boxes(image: Image.Image, boxes, labels, scores, class_names=None, conf
     return image
 
 
-def run_ssd(image: Image.Image, conf: float, device: torch.device):
+def load_ssd_model(device: torch.device):
     from torchvision import transforms
     from torchvision.models.detection import ssdlite320_mobilenet_v3_large
     from torchvision.models.detection.ssdlite import SSDLite320_MobileNet_V3_Large_Weights
@@ -49,12 +50,25 @@ def run_ssd(image: Image.Image, conf: float, device: torch.device):
     weights = SSDLite320_MobileNet_V3_Large_Weights.DEFAULT
     model = ssdlite320_mobilenet_v3_large(weights=weights).to(device).eval()
     preprocess = transforms.Compose([transforms.ToTensor()])
+    class_names = {i: n for i, n in enumerate(weights.meta.get("categories", []))}
+    return model, preprocess, class_names
+
+
+def run_ssd(
+    image: Image.Image,
+    conf: float,
+    device: torch.device,
+    model: Optional[torch.nn.Module] = None,
+    preprocess=None,
+    class_names=None,
+):
+    if model is None or preprocess is None or class_names is None:
+        model, preprocess, class_names = load_ssd_model(device)
 
     inp = preprocess(image).to(device)
     with torch.no_grad():
         pred = model([inp])[0]
 
-    class_names = {i: n for i, n in enumerate(weights.meta.get("categories", []))}
     annotated = draw_boxes(
         image.copy(),
         pred["boxes"].detach().cpu().numpy(),
@@ -123,10 +137,10 @@ def main():
     annotated.save(out_path)
     print(f"Saved annotated output: {out_path}")
 
-    for i, (b, l, s) in enumerate(zip(boxes, labels, scores)):
+    for i, (b, label_id, s) in enumerate(zip(boxes, labels, scores)):
         if float(s) < args.conf:
             continue
-        print(f"[{i}] cls={int(l)} score={float(s):.4f} box={list(map(float, b))}")
+        print(f"[{i}] cls={int(label_id)} score={float(s):.4f} box={list(map(float, b))}")
 
 
 if __name__ == "__main__":
