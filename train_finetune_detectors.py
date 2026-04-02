@@ -69,14 +69,32 @@ def train_yolo(dataset_path: Path, output_dir: Path, epochs: int, imgsz: int, ba
     train, val, test = split_data(image_files)
 
     # Reconstructed: practical lightweight path using Ultralytics CLI-equivalent API.
+    # Use explicit split list files to guarantee disjoint train/val/test partitions.
+    split_files = {
+        "train": output_dir / "train_images.txt",
+        "val": output_dir / "val_images.txt",
+        "test": output_dir / "test_images.txt",
+    }
+    split_payloads = {
+        "train": train,
+        "val": val,
+        "test": test,
+    }
+    for split_name, split_file in split_files.items():
+        split_items = split_payloads[split_name]
+        split_file.write_text(
+            "\n".join(str(p.resolve()) for p in split_items),
+            encoding="utf-8",
+        )
+
     dataset_yaml = output_dir / "dataset_generated.yaml"
     dataset_yaml.write_text(
         "\n".join(
             [
-                f"path: {dataset_path}",
-                "train: images",
-                "val: images",
-                "test: images",
+                f"path: {dataset_path.resolve()}",
+                f"train: {split_files['train'].resolve()}",
+                f"val: {split_files['val'].resolve()}",
+                f"test: {split_files['test'].resolve()}",
                 f"nc: {max(class_ids) + 1 if class_ids else 1}",
                 f"names: {[str(i) for i in range(max(class_ids) + 1 if class_ids else 1)]}",
             ]
