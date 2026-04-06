@@ -17,17 +17,12 @@ This repository provides a clean, runnable tutorial implementation for:
 - `tests_smoke.py`
 - `requirements.txt`
 
-## What was copied directly from the tutorial plan
-- `object_detection_ssd_yolo_tf.py` is copied exactly from the provided plan text (tutorial style, single script).
-
-## What was inferred/reconstructed
+## What was constructed
 - PyTorch architecture mapping for SSD/YOLO in `object_detection_ssd_yolo_pytorch.py`.
 - Optional dependency handling and output annotation logic in `pretrained_detectors.py`.
 - Batch folder inference plus JSON/CSV exports in `custom_dataset_inference.py`.
 - Practical validation-first fine-tuning scaffolding in `train_finetune_detectors.py`.
 - Smoke tests in `tests_smoke.py`.
-
-Reconstructed sections are marked inline in code with short comments.
 
 ## Install
 ```bash
